@@ -1,0 +1,10 @@
+greet = 'Привет, {name}, я бот, помогающий создать персонажа для Vampire: the Masquerade 5th Edition'
+menu = 'Главное меню'
+chars = 'Список персонажей'
+
+thanks = 'Принято, идём дальше!'
+creation_welcome = 'Добро пожаловать в режим создания персонажа'
+personal_info_name = 'Введите имя'
+personal_info_clan = 'Введите клан'
+mechanical_info_attributes = 'Введите атрибуты'
+mechanical_info_skills = 'Введите навыки'
