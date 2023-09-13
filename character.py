@@ -31,7 +31,7 @@ class Character:
         if self.__attributes:
             cnt = 0
             for (key, value) in self.__attributes.items():
-                ans += f'{key.capitalize():20}{value:10}'
+                ans += f'{key.capitalize():17}{value}  '
                 cnt += 1
                 if cnt == 3:
                     ans += '\n'
@@ -40,7 +40,7 @@ class Character:
         if self.__skills:
             cnt = 0
             for (key, value) in self.__skills.items():
-                ans += f'{key.capitalize():20} {value}'
+                ans += f'{key.capitalize():17}{value}  '
                 cnt += 1
                 if cnt == 2:
                     ans += '\n'
