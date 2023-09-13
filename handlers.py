@@ -42,7 +42,9 @@ async def message_handler(msg, state:FSMContext):
         await msg.answer(text.menu, reply_markup=keyboard.menu)
     else:
         await msg.message.answer(text.menu, reply_markup=keyboard.menu)
+        await msg.answer()
     await state.clear()
+    
 
 # показать список персонажей
 @router.callback_query(F.data == 'list_of_chars')
@@ -90,6 +92,7 @@ async def create_char(callback: CallbackQuery, state:FSMContext):
 @router.callback_query(CreationOrder.name, F.data == 'next')
 async def message_handler(callback: CallbackQuery):
     await callback.message.answer(text.personal_info_name)
+    await callback.answer()
 
 # считывание имени
 @router.message(CreationOrder.name, F.text)
@@ -106,6 +109,7 @@ async def message_handler(msg: Message, state: FSMContext):
 @router.callback_query(CreationOrder.clan, F.data == 'next')
 async def message_handler(callback: CallbackQuery):
     await callback.message.answer(text.personal_info_clan, reply_markup=keyboard.list_of_clans())
+    await callback.answer()
 
 # считывание клана
 @router.message(CreationOrder.clan, F.text)
@@ -120,6 +124,8 @@ async def message_handler(msg: Message, state: FSMContext):
 @router.callback_query(CreationOrder.attributes, F.data == 'next')
 async def message_handler(callback: CallbackQuery):
     await callback.message.answer(text.mechanical_info_attributes)
+    await callback.message.answer(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
+    await callback.answer()
 
 # для атрибутов и навыков ниже
 # нужно реализовать мини-викторину
@@ -127,11 +133,21 @@ async def message_handler(callback: CallbackQuery):
 # нужные значения
 
 # считывание атрибутов
+
+@router.callback_query(F.data.startswith('attr_'))
+async def pick_values(callback: CallbackQuery):
+    attribute = callback.data.split('_')[1]
+    user_data[callback.from_user.id][-1].attributes[attribute] += 1
+    await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
+    await callback.answer()
+
 @router.message(CreationOrder.attributes, F.text)
 async def message_handler(msg: Message, state: FSMContext):
     user_data[msg.from_user.id][-1].attributes = {attribute : value 
                                                   for (attribute, value) in zip(
-                                                      ('сила', 'ловкость', "выносливость"),
+                                                      ('сила', 'харизма', 'интеллект',
+                                                       'ловкость', "манипулирование", "смекалка",
+                                                       "выносливость", "самообладание", "решительность"),
                                                       (map(int, msg.text.split())))}
     char_info = user_data[msg.from_user.id][-1].get_info()
     await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
@@ -144,9 +160,14 @@ async def message_handler(callback: CallbackQuery):
     await callback.message.answer(text.mechanical_info_skills)
 
 # считывание навыков
-@router.message(CreationOrder.skills, F.text)
+# @router.message(CreationOrder.skills, F.text)
 async def message_handler(msg: Message, state: FSMContext):
-    user_data[msg.from_user.id][-1].skills = dict(map(int, msg.text.split()))
+    user_data[msg.from_user.id][-1].skills = {skill : value 
+                                                  for (skill, value) in zip(
+                                                      ('сила', 'харизма', 'интеллект',
+                                                       'ловкость', "манипулирование", "смекалка",
+                                                       "выносливость", "самообладание", "решительность"),
+                                                      (map(int, msg.text.split())))}
     char_info = user_data[msg.from_user.id][-1].get_info()
     await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
     await msg.answer(text.thanks, reply_markup=keyboard.done_creation)
