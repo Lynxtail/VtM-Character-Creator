@@ -1,4 +1,5 @@
 import logging
+import config
 from telegram import Update, ForceReply, InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
 
@@ -83,7 +84,7 @@ def button_tap(update: Update, context: CallbackContext):
     update.callback_query.message.edit_text(text, ParseMode.HTML, reply_markup=markup)
 
 def main():
-    updater = Updater('6532970658:AAFdpG1xTFce_eQByM18Z1bFYLtiHMEyBiE')
+    updater = Updater(config.BOT_TOKEN)
 
     dispatcher = updater.dispatcher
     
