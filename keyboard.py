@@ -41,6 +41,27 @@ def list_of_clans():
     builder.adjust(4)
     return builder.as_markup(one_time_keyboard=True)
 
+def select_attributes():
+    attributes = ('сила', 'харизма', 'интеллект', 
+                  'ловкость', "манипулирование", "смекалка", 
+                  "выносливость", "самообладание", "решительность")
+    builder = InlineKeyboardBuilder()
+    for i, item in enumerate(attributes):
+        builder.button(text=f'{item.capitalize()}', callback_data=f'attr_{item}')
+    builder.adjust(3)
+    builder.add([break_creation])
+    return builder.as_markup()
+
+def select_skills():
+    skills = ('сила', 'харизма', 'интеллект', 
+                  'ловкость', "манипулирование", "смекалка", 
+                  "выносливость", "самообладание", "решительность")
+    builder = InlineKeyboardBuilder()
+    for i, item in enumerate(skills):
+        builder.button(text=f'{item.capitalize():20}  ', callback_data=f'skill_{item}')
+    builder.adjust(3)
+    return builder.as_markup()
+
 def creation_steps():
     builder = InlineKeyboardBuilder()
     for i in range(4):
