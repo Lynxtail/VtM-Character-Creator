@@ -16,7 +16,7 @@ iexit_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='В 
 #     return InlineKeyboardMarkup(inline_keyboard=InlineKeyboardButton(text='Далее', callback_data=f'{step}'))
 
 # next_step = InlineKeyboardMarkup(inline_keyboard=InlineKeyboardButton(text='Далее', callback_data='next'))
-next_step = [InlineKeyboardButton(text='Мои персонажи', callback_data='list_of_chars')]
+next_step = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Мои персонажи', callback_data='list_of_chars')]])
 # done = InlineKeyboardMarkup(inline_keyboard=InlineKeyboardButton(text='Завершить', callback_data='done'))
 
 # для динамических клавиатур
