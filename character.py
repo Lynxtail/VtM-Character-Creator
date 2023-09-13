@@ -14,10 +14,12 @@ class Character:
         self.__clan = clan
     
     def get_info(self):
-        return f'Имя: {self.__name}/n\
-                Атрибуты: {self.__attributes}/n\
-                Навыки: {self.__skills}/n\
-                Клан: {self.__clan}'
+        return f'\
+Имя: {self.__name}\n\
+Клан: {self.__clan}\n\
+Атрибуты: {self.__attributes}\n\
+Навыки: {self.__skills}\n\
+'
     
     @property
     def name(self):
