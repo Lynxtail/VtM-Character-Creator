@@ -1,5 +1,5 @@
 from aiogram import types, F, Router, flags
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -17,6 +17,16 @@ class CreationOrder(StatesGroup):
     finish = State()
 
 
+# страницы при просмотре персонажей
+        # class ShowCharactersOrder(StatesGroup):
+        #     page_1 = State()
+        #     __pages = set(page_1)
+
+        #     def new_page(self):
+        #         page = State()
+        #         self.__pages.add(page)
+
+
 router = Router()
 user_data = dict()
 
@@ -26,15 +36,25 @@ async def start_handler(msg: Message):
 
 @router.message(F.text == 'Меню')
 @router.message(F.text == 'Выйти в меню')
-async def message_handler(msg: Message):
-    await msg.answer(text.menu, reply_markup=keyboard.menu)
+@router.callback_query(F.data == 'break') # отмена создания
+async def message_handler(msg, state:FSMContext):
+    if isinstance(msg, Message):
+        await msg.answer(text.menu, reply_markup=keyboard.menu)
+    else:
+        await msg.message.answer(text.menu, reply_markup=keyboard.menu)
+    await state.clear()
 
+# показать список персонажей
 @router.callback_query(F.data == 'list_of_chars')
 async def get_chars(callback: CallbackQuery):
-    # await state.set_state()
-    await callback.message.answer(text.chars, reply_markup=keyboard.list_of_chars(user_data.get(callback.from_user.id, None)))
+    try:
+        await callback.message.answer(text.chars, reply_markup=keyboard.list_of_chars(user_data.get(callback.from_user.id, None)))
+    except TypeError:
+        await callback.message.answer(text.no_chars)
+        await callback.message.answer(text.menu, reply_markup=keyboard.menu)
     await callback.answer()
 
+# вывод списка в виде кнопок
 @router.callback_query(F.data.startwith('char_'))
 async def show_character(callback: CallbackQuery):
     characters = user_data.get(callback.from_user.id, None)
@@ -54,10 +74,11 @@ async def show_character(callback: CallbackQuery):
 # значение -- вложенную коллекцию из персонажей,
 # созданных этим пользователем.
 
+# создание нового персонажа
 @router.callback_query(F.data == 'new_char')
 async def create_char(callback: CallbackQuery, state:FSMContext):
     # приветствие и переход на 1 шаг
-    await callback.message.answer(text.creation_welcome, reply_markup=keyboard.next_step)
+    await callback.message.answer(text.creation_welcome, reply_markup=keyboard.welcome_creation)
     if callback.from_user.id in user_data.keys():
         user_data[callback.from_user.id].append(Character())
     else:
@@ -74,19 +95,25 @@ async def message_handler(callback: CallbackQuery):
 @router.message(CreationOrder.name, F.text)
 async def message_handler(msg: Message, state: FSMContext):
     user_data[msg.from_user.id][-1].name = msg.text.title()
-    await msg.answer(text.thanks, reply_markup=keyboard.next_step)
+    # await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
+    char_info = user_data[msg.from_user.id][-1].get_info()
+    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
+    await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
     await state.set_state(CreationOrder.clan)
+    
 
 # запрос клана
 @router.callback_query(CreationOrder.clan, F.data == 'next')
 async def message_handler(callback: CallbackQuery):
-    await callback.message.answer(text.personal_info_clan)
+    await callback.message.answer(text.personal_info_clan, reply_markup=keyboard.list_of_clans())
 
 # считывание клана
 @router.message(CreationOrder.clan, F.text)
 async def message_handler(msg: Message, state: FSMContext):
     user_data[msg.from_user.id][-1].clan = msg.text.title()
-    await msg.answer(text.thanks, reply_markup=keyboard.next_step)
+    char_info = user_data[msg.from_user.id][-1].get_info()
+    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
+    await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
     await state.set_state(CreationOrder.attributes)
 
 # запрос атрибутов
@@ -98,11 +125,17 @@ async def message_handler(callback: CallbackQuery):
 # нужно реализовать мини-викторину
 # с инлайн-кнопками, повышающие
 # нужные значения
+
 # считывание атрибутов
 @router.message(CreationOrder.attributes, F.text)
 async def message_handler(msg: Message, state: FSMContext):
-    user_data[msg.from_user.id][-1].attributes = msg.text
-    await msg.answer(text.thanks, reply_markup=keyboard.next_step)
+    user_data[msg.from_user.id][-1].attributes = {attribute : value 
+                                                  for (attribute, value) in zip(
+                                                      ('сила', 'ловкость', "выносливость"),
+                                                      (map(int, msg.text.split())))}
+    char_info = user_data[msg.from_user.id][-1].get_info()
+    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
+    await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
     await state.set_state(CreationOrder.skills)
 
 # запрос навыков
@@ -113,10 +146,13 @@ async def message_handler(callback: CallbackQuery):
 # считывание навыков
 @router.message(CreationOrder.skills, F.text)
 async def message_handler(msg: Message, state: FSMContext):
-    user_data[msg.from_user.id][-1].skills = msg.text
-    await msg.answer(text.thanks, reply_markup=keyboard.done)
+    user_data[msg.from_user.id][-1].skills = dict(map(int, msg.text.split()))
+    char_info = user_data[msg.from_user.id][-1].get_info()
+    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
+    await msg.answer(text.thanks, reply_markup=keyboard.done_creation)
     await state.set_state(CreationOrder.finish)
 
+# конец создания
 @router.callback_query(CreationOrder.finish, F.data == 'done')
 async def message_handler(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.ReplyKeyboardRemove())
