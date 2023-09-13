@@ -133,11 +133,14 @@ async def message_handler(callback: CallbackQuery):
 # нужные значения
 
 # считывание атрибутов
-
+# нужно добавить окончание этого шага
 @router.callback_query(F.data.startswith('attr_'))
 async def pick_values(callback: CallbackQuery):
     attribute = callback.data.split('_')[1]
-    user_data[callback.from_user.id][-1].attributes[attribute] += 1
+    if user_data[callback.from_user.id][-1].attributes[attribute] <= 5:
+        user_data[callback.from_user.id][-1].attributes[attribute] += 1
+    else:
+        await callback.answer(text='Достигнуто максимальное значение атрибута!')
     await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
     await callback.answer()
 
