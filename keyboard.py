@@ -49,7 +49,6 @@ def select_attributes():
     for i, item in enumerate(attributes):
         builder.button(text=f'{item.capitalize()}', callback_data=f'attr_{item}')
     builder.adjust(3)
-    builder.add([break_creation])
     return builder.as_markup()
 
 def select_skills():
