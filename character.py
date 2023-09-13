@@ -1,5 +1,6 @@
 class Character:
     __name = ''
+    # __attributes = dict().fromkeys((range(9)))
     __attributes = dict()
     __skills = dict()
     __clan = ''
@@ -9,17 +10,42 @@ class Character:
                  skills:dict = {}, 
                  clan:str = '???') -> None:
         self.__name = name
-        self.__attributes = attributes
-        self.__skills = skills
+        if attributes:
+            self.__attributes = attributes
+        else:
+            self.__attributes = {key : 0 for key in ('сила', 'харизма', 'интеллект', 
+                  'ловкость', "манипулирование", "смекалка", 
+                  "выносливость", "самообладание", "решительность")}
+        if attributes:
+            self.__skills = skills
+        else:
+            self.__skills = {key : 0 for key in ('сила', 'харизма', 'интеллект', 
+                  'ловкость', "манипулирование", "смекалка", 
+                  "выносливость", "самообладание", "решительность")}
         self.__clan = clan
     
     def get_info(self):
-        return f'\
-Имя: {self.__name}\n\
-Клан: {self.__clan}\n\
-Атрибуты: {self.__attributes}\n\
-Навыки: {self.__skills}\n\
-'
+        ans = f'Имя: {self.__name}'
+        ans += f'\nКлан: {self.__clan}'
+        ans += f'\n\nАтрибуты:\n'
+        if self.__attributes:
+            cnt = 0
+            for (key, value) in self.__attributes.items():
+                ans += f'{key.capitalize():20}{value:10}'
+                cnt += 1
+                if cnt == 3:
+                    ans += '\n'
+                    cnt = 0
+        ans += '\n\nНавыки:\n'        
+        if self.__skills:
+            cnt = 0
+            for (key, value) in self.__skills.items():
+                ans += f'{key.capitalize():20} {value}'
+                cnt += 1
+                if cnt == 2:
+                    ans += '\n'
+                    cnt = 0
+        return ans
     
     @property
     def name(self):
