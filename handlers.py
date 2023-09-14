@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from aiogram.utils.callback_answer import CallbackAnswer
 
 import keyboard
 import text
@@ -88,9 +89,29 @@ async def create_char(callback: CallbackQuery, state:FSMContext):
     await state.set_state(CreationOrder.name)
     await callback.answer()
 
+# назад
+@router.callback_query(F.data == 'back')
+async def back_handler(callback: CallbackQuery, state:FSMContext):
+    if await state.get_state() == CreationOrder.name:
+        await state.clear()
+        await create_char(callback, state)
+    if await state.get_state() == CreationOrder.clan:
+        await state.set_state(CreationOrder.name)
+        await choose_name(callback)
+    if await state.get_state() == CreationOrder.attributes:
+        await state.set_state(CreationOrder.clan)
+        await choose_clan(callback)
+    if await state.get_state() == CreationOrder.skills:
+        await state.set_state(CreationOrder.attributes)
+        await select_attributes(callback)
+    if await state.get_state() == CreationOrder.finish:
+        await state.set_state(CreationOrder.skills)
+        await select_skills(callback)
+    await callback.answer()
+
 # запрос имени
 @router.callback_query(CreationOrder.name, F.data == 'next')
-async def message_handler(callback: CallbackQuery):
+async def choose_name(callback: CallbackQuery):
     await callback.message.answer(text.personal_info_name)
     await callback.answer()
 
@@ -107,7 +128,7 @@ async def message_handler(msg: Message, state: FSMContext):
 
 # запрос клана
 @router.callback_query(CreationOrder.clan, F.data == 'next')
-async def message_handler(callback: CallbackQuery):
+async def choose_clan(callback: CallbackQuery):
     await callback.message.answer(text.personal_info_clan, reply_markup=keyboard.list_of_clans())
     await callback.answer()
 
@@ -122,59 +143,62 @@ async def message_handler(msg: Message, state: FSMContext):
 
 # запрос атрибутов
 @router.callback_query(CreationOrder.attributes, F.data == 'next')
-async def message_handler(callback: CallbackQuery):
+async def select_attributes(callback: CallbackQuery):
     await callback.message.answer(text.mechanical_info_attributes)
     await callback.message.answer(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
     await callback.answer()
 
-# для атрибутов и навыков ниже
-# нужно реализовать мини-викторину
-# с инлайн-кнопками, повышающие
-# нужные значения
-
 # считывание атрибутов
-# нужно добавить окончание этого шага
 @router.callback_query(F.data.startswith('attr_'))
-async def pick_values(callback: CallbackQuery):
+async def pick_values(callback: CallbackQuery, callback_answer: CallbackAnswer, state: FSMContext):
     attribute = callback.data.split('_')[1]
     if user_data[callback.from_user.id][-1].attributes[attribute] <= 5:
         user_data[callback.from_user.id][-1].attributes[attribute] += 1
     else:
+        callback_answer.cache_time = 10
         await callback.answer(text='Достигнуто максимальное значение атрибута!')
-    await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
+    if sum(user_data[callback.from_user.id][-1].attributes.values) == 22:
+        await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info() + text.thanks, reply_markup=keyboard.next_step_creation)
+        await state.set_state(CreationOrder.skills)
+    else:
+        await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_attributes())
     await callback.answer()
 
-@router.message(CreationOrder.attributes, F.text)
-async def message_handler(msg: Message, state: FSMContext):
-    user_data[msg.from_user.id][-1].attributes = {attribute : value 
-                                                  for (attribute, value) in zip(
-                                                      ('сила', 'харизма', 'интеллект',
-                                                       'ловкость', "манипулирование", "смекалка",
-                                                       "выносливость", "самообладание", "решительность"),
-                                                      (map(int, msg.text.split())))}
-    char_info = user_data[msg.from_user.id][-1].get_info()
-    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
-    await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
-    await state.set_state(CreationOrder.skills)
+# @router.message(CreationOrder.attributes, F.text)
+# async def message_handler(msg: Message, state: FSMContext):
+#     user_data[msg.from_user.id][-1].attributes = {attribute : value 
+#                                                   for (attribute, value) in zip(
+#                                                       ('сила', 'харизма', 'интеллект',
+#                                                        'ловкость', "манипулирование", "смекалка",
+#                                                        "выносливость", "самообладание", "решительность"),
+#                                                       (map(int, msg.text.split())))}
+#     char_info = user_data[msg.from_user.id][-1].get_info()
+#     await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
+#     await msg.answer(text.thanks, reply_markup=keyboard.next_step_creation)
+#     await state.set_state(CreationOrder.skills)
 
 # запрос навыков
 @router.callback_query(CreationOrder.skills, F.data == 'next')
-async def message_handler(callback: CallbackQuery):
+async def select_skills(callback: CallbackQuery):
     await callback.message.answer(text.mechanical_info_skills)
+    await callback.message.answer(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_skills())
+    await callback.answer()
 
 # считывание навыков
-# @router.message(CreationOrder.skills, F.text)
-async def message_handler(msg: Message, state: FSMContext):
-    user_data[msg.from_user.id][-1].skills = {skill : value 
-                                                  for (skill, value) in zip(
-                                                      ('сила', 'харизма', 'интеллект',
-                                                       'ловкость', "манипулирование", "смекалка",
-                                                       "выносливость", "самообладание", "решительность"),
-                                                      (map(int, msg.text.split())))}
-    char_info = user_data[msg.from_user.id][-1].get_info()
-    await msg.answer(char_info + '\n\n', reply_markup=ReplyKeyboardRemove())
-    await msg.answer(text.thanks, reply_markup=keyboard.done_creation)
-    await state.set_state(CreationOrder.finish)
+@router.callback_query(F.data.startswith('skill_'))
+async def pick_values(callback: CallbackQuery, callback_answer: CallbackAnswer, state: FSMContext):
+    skill = callback.data.split('_')[1]
+    if user_data[callback.from_user.id][-1].skills[skill] <= 4:
+        user_data[callback.from_user.id][-1].skills[skill] += 1
+    else:
+        callback_answer.cache_time = 10
+        await callback.answer(text='Достигнуто максимальное значение атрибута!')
+    if sum(user_data[callback.from_user.id][-1].skills.values) == 22:
+        await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info() + text.thanks, reply_markup=keyboard.next_step_creation)
+        await state.set_state(CreationOrder.skills)
+    else:
+        await callback.message.edit_text(user_data[callback.from_user.id][-1].get_info(), reply_markup=keyboard.select_skills())
+    await callback.answer()    
 
 # конец создания
 @router.callback_query(CreationOrder.finish, F.data == 'done')
