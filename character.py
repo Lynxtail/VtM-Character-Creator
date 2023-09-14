@@ -29,22 +29,12 @@ class Character:
         ans += f'\nКлан: {self.__clan}'
         ans += f'\n\nАтрибуты:\n'
         if self.__attributes:
-            cnt = 0
             for (key, value) in self.__attributes.items():
-                ans += f'{key.capitalize():17}{value}  '
-                cnt += 1
-                if cnt == 3:
-                    ans += '\n'
-                    cnt = 0
+                ans += f'{key.capitalize():17}{value}\n'
         ans += '\n\nНавыки:\n'        
         if self.__skills:
-            cnt = 0
             for (key, value) in self.__skills.items():
-                ans += f'{key.capitalize():17}{value}  '
-                cnt += 1
-                if cnt == 2:
-                    ans += '\n'
-                    cnt = 0
+                ans += f'{key.capitalize():17}{value}\n'
         return ans
     
     @property
